@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>厦门外国语学校 · 大门与喷泉花圃 · 3D 复原</title>
+<style>
+  :root{
+    --ink:#0e1621; --panel:rgba(16,24,34,.72); --line:rgba(255,255,255,.12);
+    --txt:#eef3f8; --dim:#9fb0c2; --accent:#6cb8ff; --gold:#d6b15a;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:#0b1118;color:var(--txt);
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;overflow:hidden}
+  canvas{display:block;width:100%;height:100%}
+  .hud{position:fixed;left:26px;top:22px;pointer-events:none;z-index:5}
+  .hud h1{margin:0;font-size:19px;font-weight:600;letter-spacing:.14em}
+  .hud h1 b{color:var(--gold);font-weight:600}
+  .hud p{margin:7px 0 0;font-size:12px;color:var(--dim);letter-spacing:.08em}
+  .views{position:fixed;right:26px;top:22px;display:flex;gap:8px;z-index:6;flex-wrap:wrap;justify-content:flex-end;max-width:60vw}
+  .views button{background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    padding:8px 13px;border-radius:999px;font-size:12.5px;letter-spacing:.06em;cursor:pointer;
+    backdrop-filter:blur(10px);transition:.18s}
+  .views button:hover{border-color:rgba(108,184,255,.55);color:#fff}
+  .views button.on{background:rgba(108,184,255,.18);border-color:rgba(108,184,255,.65);color:#dcefff}
+  .bar{position:fixed;left:26px;bottom:22px;display:flex;gap:16px;align-items:center;z-index:6;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 16px;backdrop-filter:blur(10px)}
+  .bar label{font-size:12.5px;color:var(--dim);display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
+  .bar input{accent-color:var(--accent)}
+  .bar .sep{width:1px;height:18px;background:var(--line)}
+  .stat{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums;z-index:6;
+    position:fixed;right:26px;bottom:24px;letter-spacing:.06em}
+  .refs{position:fixed;right:26px;top:74px;width:330px;background:var(--panel);border:1px solid var(--line);
+    border-radius:16px;overflow:hidden;z-index:7;backdrop-filter:blur(12px);transition:.25s;transform-origin:top right}
+  .refs.hide{opacity:0;transform:scale(.96) translateY(-6px);pointer-events:none}
+  .refs .head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 8px}
+  .refs .head span{font-size:12px;color:var(--dim);letter-spacing:.08em}
+  .refs .head button{background:none;border:none;color:var(--dim);cursor:pointer;font-size:16px;line-height:1}
+  .refs img{display:block;width:100%;height:auto;background:#000}
+  .refs .cap{padding:9px 12px 11px;font-size:11.5px;color:var(--dim);line-height:1.5}
+  .tabs{display:flex;gap:6px;padding:0 12px 10px;flex-wrap:wrap}
+  .tabs button{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--dim);
+    font-size:11.5px;padding:5px 9px;border-radius:8px;cursor:pointer}
+  .tabs button.on{color:#fff;border-color:rgba(108,184,255,.6);background:rgba(108,184,255,.16)}
+  .labels{position:fixed;inset:0;pointer-events:none;z-index:4}
+  .lab{position:absolute;transform:translate(-50%,-50%);font-size:12px;letter-spacing:.1em;
+    color:#eaf4ff;background:rgba(10,18,28,.62);border:1px solid rgba(108,184,255,.4);
+    padding:4px 9px;border-radius:999px;white-space:nowrap;backdrop-filter:blur(4px);
+    opacity:0;transition:opacity .2s}
+  .lab:before{content:"";position:absolute;left:-4px;top:50%;width:6px;height:6px;border-radius:50%;
+    background:var(--accent);transform:translateY(-50%);box-shadow:0 0 8px var(--accent)}
+  #loading{position:fixed;inset:0;background:#0b1118;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;z-index:20;transition:opacity .5s}
+  #loading.gone{opacity:0;pointer-events:none}
+  #loading .ring{width:36px;height:36px;border:2px solid rgba(255,255,255,.14);border-top-color:var(--accent);
+    border-radius:50%;animation:spin 1s linear infinite}
+  #loading p{margin:16px 0 0;font-size:12.5px;color:var(--dim);letter-spacing:.12em}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hint{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);font-size:11.5px;color:rgba(200,214,228,.55);
+    letter-spacing:.08em;z-index:3;pointer-events:none}
+  @media (max-width:820px){
+    .refs{width:min(78vw,330px);top:110px}
+    .views{top:74px;left:20px;right:20px;max-width:none;justify-content:flex-start}
+    .bar{left:16px;bottom:16px;padding:8px 12px;gap:10px}
+    .hint{display:none}
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="hud">
+  <h1>厦门外国语学校 <b>·</b> 海沧校区</h1>
+  <p>南大门 &amp; 喷泉花圃 · 1:1 实景复原 · 单位 米</p>
+</div>
+
+<nav class="views" id="views">
+  <button data-v="street" class="on">街道立面</button>
+  <button data-v="inside">校门内侧</button>
+  <button data-v="bed">喷泉花圃</button>
+  <button data-v="plaza">广场全景</button>
+  <button data-v="top">鸟瞰</button>
+</nav>
+
+<aside class="refs" id="refs">
+  <div class="head"><span>参考照片</span><button id="refsClose" title="收起">×</button></div>
+  <img id="refimg" alt="reference">
+  <div class="tabs" id="reftabs">
+    <button data-r="street" class="on">正立面（金字）</button>
+    <button data-r="gate">新照片 · 大门</button>
+    <button data-r="bed">新照片 · 花圃</button>
+    <button data-r="aerial">俯视</button>
+  </div>
+  <div class="cap" id="refcap"></div>
+</aside>
+
+<div class="labels" id="labels"></div>
+
+<div class="bar">
+  <label><input type="checkbox" id="chkShadow" checked> 阴影</label>
+  <div class="sep"></div>
+  <label><input type="checkbox" id="chkSpin"> 自动旋转</label>
+  <div class="sep"></div>
+  <label><input type="checkbox" id="chkLabels" checked> 标注</label>
+  <div class="sep"></div>
+  <label><input type="checkbox" id="chkRefs" checked> 参考图</label>
+</div>
+
+<div class="stat" id="stat">—</div>
+<div class="hint">左键旋转 · 右键平移 · 滚轮缩放 · 数字键 1–5 切换机位</div>
+
+<div id="loading"><div class="ring"></div><p>正在载入校园模型…</p></div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/GLTFLoader.js"></script>
+<script src="lib/OrbitControls.js"></script>
+<script src="model.b64.js"></script>
+<script src="refs.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

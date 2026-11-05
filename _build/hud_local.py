@@ -1,0 +1,10 @@
+﻿from pathlib import Path
+p=Path('xmfls-osm-model/src/app.js'); s=p.read_text(encoding='utf-8')
+s=s.replace("      dbgGround.textContent = 'X ' + fmtCoord(groundHit.x) + '  Z ' + fmtCoord(groundHit.z);", "      const lc = worldToLocal(groundHit.x, groundHit.z);\n      dbgGround.textContent = 'X ' + fmtCoord(lc.x) + '  Z ' + fmtCoord(lc.z);")
+s=s.replace("    dbgCam.textContent = 'X ' + fmtCoord(camera.position.x) + '  Y ' + camera.position.y.toFixed(1) + '  Z ' + fmtCoord(camera.position.z);", "    const lc = worldToLocal(camera.position.x, camera.position.z);\n    dbgCam.textContent = 'X ' + fmtCoord(lc.x) + '  Y ' + camera.position.y.toFixed(1) + '  Z ' + fmtCoord(lc.z);")
+p.write_text(s,encoding='utf-8')
+h=Path('xmfls-osm-model/src/index.html'); t=h.read_text(encoding='utf-8')
+t=t.replace('X→东 · Z→南 · 角度自北顺时针 · 原点 24.457256, 118.031006', '场地坐标 · 摆正轴 · X/Z 与编辑移动一致 · 原点 24.457256, 118.031006')
+t=t.replace('θ=场地/建筑长轴方位（北 0°），坐标为模型米制', 'θ=长轴方位；X/Z 为场地坐标（摆正轴），与编辑移动一致')
+h.write_text(t,encoding='utf-8')
+print('HUD local')

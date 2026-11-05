@@ -1,0 +1,13 @@
+﻿from pathlib import Path
+p=Path(r'xmfls-osm-model\src\app.js'); s=p.read_text(encoding='utf-8')
+s=s.replace("renderer.toneMappingExposure = 1.02;", "renderer.toneMappingExposure = .92;")
+s=s.replace("const hemi = new THREE.HemisphereLight(0xfdf9ef, 0x7b806f, .86);", "const hemi = new THREE.HemisphereLight(0xfbf5e9, 0x666b5c, .52);")
+s=s.replace("const sun = new THREE.DirectionalLight(0xfff4df, 2.05);\n  sun.position.set(360, 520, 280);", "const sun = new THREE.DirectionalLight(0xfff2dc, 1.95);\n  sun.position.set(300, 430, 235);")
+s=s.replace("const fill = new THREE.DirectionalLight(0xc9d7d1, .32);", "const fill = new THREE.DirectionalLight(0xc9d7d1, .18);")
+s=s.replace("scene.add(new THREE.AmbientLight(0xf0e9dc, .18));", "scene.add(new THREE.AmbientLight(0xf0e9dc, .10));")
+s=s.replace("    ground: 0xe6dfd2,\n    schoolGround: 0xf0e9dc,\n    insideWall: 0xf6f1e6,\n    insideTop: 0xc9c0b1,\n    outsideWall: 0xc3c5bf,\n    outsideTop: 0xa9ada6,", "    ground: 0xd2cabb,\n    schoolGround: 0xe7decf,\n    insideWall: 0xf0e9db,\n    insideTop: 0xb3a68f,\n    outsideWall: 0xb9bab4,\n    outsideTop: 0x979a92,")
+s=s.replace("    track: 0xba6a50,\n    pitch: 0x768f66,", "    track: 0xa9543f,\n    pitch: 0x5c7c53,")
+s=s.replace("const home = { target: new THREE.Vector3(30, 4, 0), theta: .68, phi: .98, radius: 690 };", "const home = { target: new THREE.Vector3(42, 3, -4), theta: .69, phi: 1.0, radius: 610 };")
+s=s.replace("opacity: .32;", "opacity: .2;")
+p.write_text(s,encoding='utf-8')
+print('contrast patched')

@@ -1,0 +1,22 @@
+# 依赖与构建产物（用 npm install 还原，不入库）
+node_modules/
+.pnpm-store/
+
+# 过程渲染图 / 截图（体积大，只留在本地工作目录）
+_shots/
+_build/_*.png
+
+# Blender 备份文件
+*.blend1
+*.blend2
+
+# Python
+__pycache__/
+*.pyc
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

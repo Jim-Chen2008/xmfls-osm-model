@@ -1,0 +1,10 @@
+﻿from pathlib import Path
+p=Path(r'xmfls-osm-model\src\app.js'); s=p.read_text(encoding='utf-8')
+s=s.replace("const plazaX = 121.365, plazaZ = -86.935, plazaRX = 26, plazaRZ = 34;", "const plazaX = 99.13, plazaZ = -80.445, plazaRX = 57.6418, plazaRZ = 18.5498;\n  const PLAZA_ROT = THREE.MathUtils.degToRad(50.9746);")
+s=s.replace("const g = new THREE.Group(); g.position.set(plazaX, 0, plazaZ); g.rotation.y = CAMPUS_ROT; G.landmarks.add(g);", "const g = new THREE.Group(); g.position.set(plazaX, 0, plazaZ); g.rotation.y = PLAZA_ROT; G.landmarks.add(g);")
+s=s.replace("x: 121.365, z: -86.935, y: 2, angle: CAMPUS_BEARING", "x: 99.13, z: -80.445, y: 2, angle: 50.97")
+p.write_text(s,encoding='utf-8')
+c=Path(r'xmfls-osm-model\src\calibrate.html').read_text(encoding='utf-8')
+c=c.replace("{no:'32', name:'黄网格椭圆广场', x:121.365, z:-86.935}", "{no:'32', name:'黄网格椭圆广场', x:99.13, z:-80.445}")
+Path(r'xmfls-osm-model\src\calibrate.html').write_text(c,encoding='utf-8')
+print('ellipse updated')

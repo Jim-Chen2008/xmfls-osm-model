@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>校园体块 · 3D 模型编辑器</title>
+<link rel="stylesheet" href="./dist/style.css">
+</head>
+<body data-mode="edit">
+
+<div class="app">
+  <!-- ============ 顶栏 ============ -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+          <path d="M12 2.6 21 7.2v9.6L12 21.4 3 16.8V7.2z"/><path d="M12 12.1 21 7.2M12 12.1 3 7.2M12 12.1v9.3"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <strong>校园体块 · 3D 编辑器</strong>
+        <small>GLB Viewer &amp; Editor</small>
+      </span>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="btn" id="btn-import" title="导入本地 .glb / .gltf 文件">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
+        导入 GLB
+      </button>
+      <button class="btn primary" id="btn-export" title="把当前场景导出为 .glb">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12"/><path d="m7.5 11.5 4.5 4.5 4.5-4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
+        导出 GLB
+      </button>
+
+      <span class="vsep"></span>
+
+      <button class="btn icon" id="btn-undo" title="撤销 (Ctrl+Z)" disabled>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7 4.5 11.5 9 16"/><path d="M4.5 11.5H14a5.5 5.5 0 0 1 0 11h-2.5"/></svg>
+      </button>
+      <button class="btn icon" id="btn-redo" title="重做 (Ctrl+Shift+Z)" disabled>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 7 4.5 4.5L15 16"/><path d="M19.5 11.5H10a5.5 5.5 0 0 0 0 11h2.5"/></svg>
+      </button>
+
+      <span class="vsep"></span>
+
+      <div class="seg" id="gizmo-mode" role="group" aria-label="变换模式">
+        <button data-mode="translate" class="on" title="移动 (1)">移动</button>
+        <button data-mode="rotate" title="旋转 (2)">旋转</button>
+        <button data-mode="scale" title="缩放 (3)">缩放</button>
+      </div>
+      <div class="seg" id="gizmo-space" role="group" aria-label="变换坐标系">
+        <button data-space="world" class="on" title="世界坐标系">世界</button>
+        <button data-space="local" title="局部坐标系">局部</button>
+      </div>
+
+      <span class="vsep"></span>
+
+      <button class="btn walk" id="btn-walk" title="进入第一人称漫游 (V)">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4.2" r="1.9"/><path d="M12.4 8.4 9.6 13l2.3 2.2-1.4 5.3"/><path d="m12.4 8.4 3.3 2 .8 3.6 2.6 1.6"/><path d="m11.9 15.2-3.6 1.2-2 3.4"/></svg>
+        第一人称
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ 主体 ============ -->
+  <main class="body">
+    <!-- ---------- 左侧栏 ---------- -->
+    <aside class="sidebar" id="sidebar">
+      <section class="panel panel-tree">
+        <div class="panel-head">
+          <h2>场景结构</h2>
+          <span class="counter" id="scene-count">—</span>
+        </div>
+        <div class="search">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.2"/><path d="m16 16 4 4"/></svg>
+          <input type="search" id="tree-search" placeholder="搜索对象名称…" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="tree" id="scene-tree" role="tree"></div>
+      </section>
+
+      <section class="panel panel-transform">
+        <div class="panel-head">
+          <h2>对象变换</h2>
+          <span class="badge off" id="sel-badge">未选中</span>
+        </div>
+
+        <div class="sel-head">
+          <div class="sel-name" id="sel-name">在视口中点击任意对象以选中</div>
+          <div class="sel-path" id="sel-path">支持场景树选择 · 单轴独立缩放</div>
+        </div>
+
+        <div class="transform-body" id="transform-rows" aria-disabled="true">
+          <!-- 行由 JS 生成 -->
+        </div>
+
+        <div class="sel-meta" id="sel-meta"></div>
+
+        <div class="panel-actions">
+          <button class="btn ghost sm" id="btn-select-parent" disabled>选父级</button>
+          <button class="btn ghost sm" id="btn-focus" disabled>聚焦 (F)</button>
+          <button class="btn ghost sm" id="btn-export-selected" disabled>导出选中</button>
+        </div>
+        <div class="panel-actions group-actions">
+          <button class="btn solid sm" id="btn-group" disabled title="把多选对象组合成一个整体 (Ctrl+G)">组合</button>
+          <button class="btn ghost sm" id="btn-ungroup" disabled title="拆散选中的组合 (Ctrl+Shift+G)">解组</button>
+        </div>
+      </section>
+
+      <section class="panel panel-view">
+        <div class="panel-head"><h2>视图与工具</h2></div>
+        <div class="toggles">
+          <label><input type="checkbox" id="chk-grid" checked><span>网格地面</span></label>
+          <label><input type="checkbox" id="chk-shadow" checked><span>实时阴影</span></label>
+          <label><input type="checkbox" id="chk-wireframe"><span>线框显示</span></label>
+          <label><input type="checkbox" id="chk-snap"><span>吸附对齐</span><em class="hint-inline">0.5 m / 15° / 0.1</em></label>
+        </div>
+        <div class="panel-actions">
+          <button class="btn ghost sm" id="btn-reset-view">重置视角</button>
+          <button class="btn ghost sm" id="btn-save-shot">保存截图</button>
+          <button class="btn ghost sm" id="btn-fly" title="锁定指针，用鼠标转向 + WASD 自由飞行 (B)">指针飞行</button>
+        </div>
+      </section>
+
+      <section class="panel panel-info" id="model-info">
+        <div class="panel-head"><h2>模型信息</h2></div>
+        <dl class="info-grid" id="info-grid">
+          <dt>文件</dt><dd id="info-name">—</dd>
+          <dt>尺寸</dt><dd id="info-size">—</dd>
+          <dt>网格 / 材质</dt><dd id="info-counts">—</dd>
+          <dt>三角面</dt><dd id="info-tris">—</dd>
+        </dl>
+      </section>
+    </aside>
+
+    <!-- ---------- 视口 ---------- -->
+    <section class="viewport" id="viewport">
+      <div class="hud hud-top">
+        <div class="hud-chip" id="hud-mode">
+          <span class="dot"></span><span id="hud-mode-text">编辑模式</span>
+        </div>
+        <div class="hud-chip ghost" id="hud-selection">未选中对象</div>
+      </div>
+
+      <div class="hints" id="hints">
+        <button class="hints-toggle" id="hints-toggle" aria-expanded="true">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.1 1-1.1 1.8v.4"/><path d="M12 17.2h.01"/></svg>
+          操作说明
+        </button>
+        <div class="hints-body">
+          <div class="hint-row"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>移动相机</span></div>
+          <div class="hint-row"><kbd>Space</kbd><kbd>Shift</kbd><span>上升 / 下降</span></div>
+          <div class="hint-row"><kbd>拖拽</kbd><span>旋转视角</span><kbd>滚轮</kbd><span>缩放</span></div>
+          <div class="hint-row"><kbd>右键</kbd><span>平移</span><kbd>点击</kbd><span>选择对象</span></div>
+          <div class="hint-row"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span>移动 / 旋转 / 缩放</span></div>
+          <div class="hint-row"><kbd>F</kbd><span>聚焦选中</span><kbd>V</kbd><span>第一人称</span></div>
+          <div class="hint-row"><kbd>B</kbd><span>指针锁定飞行</span><kbd>Esc</kbd><span>退出锁定</span></div>
+          <div class="hint-row"><kbd>Ctrl</kbd><kbd>Z</kbd><span>撤销</span><kbd>Del</kbd><span>隐藏对象</span></div>
+          <div class="hint-row"><kbd>Ctrl</kbd><kbd>点击</kbd><span>多选</span><kbd>Ctrl</kbd><kbd>G</kbd><span>组合</span></div>
+        </div>
+      </div>
+
+      <div class="walk-hud" id="walk-hud">
+        <div class="walk-title">第一人称漫游</div>
+        <div class="walk-keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 行走 · <kbd>Shift</kbd> 奔跑 · <kbd>Space</kbd> 跳跃 · <kbd>Esc</kbd> 退出</div>
+        <div class="walk-tip" id="walk-tip">点击画面锁定视角</div>
+      </div>
+
+      <div class="crosshair" id="crosshair"><span></span><span></span></div>
+
+      <div class="statusbar">
+        <span id="stat-fps">— FPS</span>
+        <span class="sep">·</span>
+        <span id="stat-tris">— 三角面</span>
+        <span class="sep">·</span>
+        <span id="stat-sel">未选中</span>
+        <span class="grow"></span>
+        <span id="stat-coord">—</span>
+      </div>
+
+      <div class="loader" id="loader">
+        <div class="loader-box">
+          <div class="spinner"></div>
+          <p id="loader-text">正在载入默认模型…</p>
+        </div>
+      </div>
+
+      <div class="dropzone" id="dropzone"><div>松开鼠标，导入 GLB 模型</div></div>
+      <input type="file" id="file-input" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" hidden>
+    </section>
+  </main>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="./dist/app.js" defer></script>
+</body>
+</html>

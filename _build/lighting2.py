@@ -1,0 +1,12 @@
+﻿from pathlib import Path
+p=Path(r'xmfls-osm-model\src\app.js'); s=p.read_text(encoding='utf-8')
+s=s.replace("renderer.toneMappingExposure = .92;", "renderer.toneMappingExposure = .88;")
+s=s.replace("const hemi = new THREE.HemisphereLight(0xfbf5e9, 0x666b5c, .52);", "const hemi = new THREE.HemisphereLight(0xfbf5e9, 0x5a5e50, .30);")
+s=s.replace("const sun = new THREE.DirectionalLight(0xfff2dc, 1.95);", "const sun = new THREE.DirectionalLight(0xfff2dc, 1.15);")
+s=s.replace("const fill = new THREE.DirectionalLight(0xc9d7d1, .18);", "const fill = new THREE.DirectionalLight(0xc9d7d1, .10);")
+s=s.replace("scene.add(new THREE.AmbientLight(0xf0e9dc, .10));", "scene.add(new THREE.AmbientLight(0xf0e9dc, .05));")
+s=s.replace("    ground: 0xd2cabb,\n    schoolGround: 0xe7decf,\n    insideWall: 0xf0e9db,\n    insideTop: 0xb3a68f,\n    outsideWall: 0xb9bab4,\n    outsideTop: 0x979a92,", "    ground: 0xbfb5a3,\n    schoolGround: 0xd9cbb7,\n    insideWall: 0xe9dfcf,\n    insideTop: 0x9d8e78,\n    outsideWall: 0xa9aaa3,\n    outsideTop: 0x85887f,")
+s=s.replace("    track: 0xa9543f,\n    pitch: 0x5c7c53,", "    track: 0x964530,\n    pitch: 0x4d6b45,")
+s=s.replace("      color: inside ? COL.edge : COL.edgeSoft,\n      transparent: true, opacity: inside ? .54 : .26", "      color: inside ? COL.edge : COL.edgeSoft,\n      transparent: true, opacity: inside ? .78 : .30")
+p.write_text(s,encoding='utf-8')
+print('lighting patched')

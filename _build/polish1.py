@@ -1,0 +1,22 @@
+from pathlib import Path
+p = Path(r'xmfls-osm-model\src\app.js')
+s = p.read_text(encoding='utf-8')
+s = s.replace("const HEIGHT_DEFAULT = 12;", "const HEIGHT_DEFAULT = 15;")
+s = s.replace("const boundaryBand = flatRibbon(DATA.school.polygon, 1.5, .034, new THREE.MeshStandardMaterial({ color: 0x4c5b4d, roughness: .95, transparent: true, opacity: .55, side: THREE.DoubleSide }));", "const boundaryBand = flatRibbon(DATA.school.polygon, 2.0, .038, new THREE.MeshStandardMaterial({ color: 0x3f5142, roughness: .95, transparent: true, opacity: .62, side: THREE.DoubleSide }));")
+# labels get a layer so hidden context does not leave floating labels
+s = s.replace("  function addLabel(text, x, y, z, kind = '') {", "  function addLabel(text, x, y, z, kind = '', layer = null) {")
+s = s.replace("    labelDefs.push({ el: div, x, y, z, kind });", "    labelDefs.push({ el: div, x, y, z, kind, layer });")
+s = s.replace("addLabel('田径场 · leisure=track', tc[0], 3, tc[1], 'sport');", "addLabel('田径场 · leisure=track', tc[0], 3, tc[1], 'sport', G.sports);")
+s = s.replace("addLabel('球场 · leisure=pitch', p.centroid[0], 3, p.centroid[1], 'sport');", "addLabel('球场 · leisure=pitch', p.centroid[0], 3, p.centroid[1], 'sport', G.sports);")
+s = s.replace("if (s.name) addLabel(s.name, s.centroid[0], 18, s.centroid[1], 'context');", "if (s.name) addLabel(s.name, s.centroid[0], 18, s.centroid[1], 'context', G.context);")
+s = s.replace("if (b.name) addLabel(b.name, b.centroid[0], 22, b.centroid[1], 'context');", "if (b.name) addLabel(b.name, b.centroid[0], 22, b.centroid[1], 'context', b.inside ? G.inside : G.outside);")
+s = s.replace("if (Math.abs(mid[0]) < 520 && Math.abs(mid[1]) < 360) addLabel(name, mid[0], 1.2, mid[1], 'road');", "if (Math.abs(mid[0]) < 520 && Math.abs(mid[1]) < 360) addLabel(name, mid[0], 1.2, mid[1], 'road', G.roads);")
+s = s.replace("    for (const l of labelDefs) {\n      labelVec.set", "    for (const l of labelDefs) {\n      if (l.layer && !l.layer.visible) { l.el.classList.remove('show'); continue; }\n      labelVec.set")
+p.write_text(s, encoding='utf-8')
+
+html = Path(r'xmfls-osm-model\src\index.html')
+h = html.read_text(encoding='utf-8')
+h = h.replace('value="12" aria-label="统一示意高度"', 'value="15" aria-label="统一示意高度"')
+h = h.replace('<output id="heightOut">12 m</output>', '<output id="heightOut">15 m</output>')
+html.write_text(h, encoding='utf-8')
+print('polish1 applied')

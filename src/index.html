@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>厦门外国语学校海沧校区 · OSM 体块模型</title>
+<meta name="description" content="依据 map.osm 校界、建筑轮廓、运动场与道路生成的三维体块模型，支持逐栋编辑与实景叠图。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23436451'/%3E%3Cpath d='M8 24V8h4l8 10V8h4v16h-4L12 14v10z' fill='%23f6f0e4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage" aria-label="厦门外国语学校海沧校区三维模型"></div>
+<div id="vignette" aria-hidden="true"></div>
+
+<header id="topbar">
+  <div class="topbar-left">
+    <div class="brandline">
+      <span class="osmbadge">OSM<span>+ 实景</span></span>
+      <span class="source-mini">map.osm · ODbL</span>
+    </div>
+    <h1>厦门外国语学校<span>海沧校区高中部</span></h1>
+    <p class="sub">OSM 校界与建筑为底 · 按实景补全看台、网球场、大门与喷泉</p>
+  </div>
+  <div class="topbar-stats">
+    <div><b id="statBuildings">21</b><span>建筑轮廓</span></div>
+    <div><b id="statArea">81,353</b><span>m² 校界</span></div>
+    <div><b>33</b><span>编号对象</span></div>
+  </div>
+</header>
+
+<div id="compass" aria-hidden="true">
+  <div class="compass-ring">
+    <span class="cn">N</span>
+    <i id="compassNeedle"></i>
+    <em></em>
+  </div>
+  <span class="compass-label">北</span>
+</div>
+
+<aside id="panel">
+  <button id="panelClose" class="panel-close" aria-label="收起数据面板">×</button>
+  <section class="panel-block data-block">
+    <div class="block-head"><span>数据 / SOURCE</span><span class="live"><i></i>OSM</span></div>
+    <dl class="data-grid">
+      <div><dt>校界内建筑</dt><dd id="dInside">18</dd></div>
+      <div><dt>校界外建筑</dt><dd id="dOutside">3</dd></div>
+      <div><dt>校界面积</dt><dd id="dArea">8.14 ha</dd></div>
+      <div><dt>OSM way / 节点</dt><dd id="dWays">46 / 438</dd></div>
+    </dl>
+    <div class="source-line">
+      <span>源文件</span><b>map.osm</b>
+      <span id="dSourceSize">101.9 KB</span>
+    </div>
+    <div class="source-line"><span>投影原点</span><b id="dOrigin">24.457256, 118.031006</b></div>
+  </section>
+
+  <section class="panel-block">
+    <div class="block-head"><span>高度 / HEIGHT</span><span class="hint">OSM 未提供</span></div>
+    <div class="height-line">
+      <input id="heightSlider" type="range" min="3" max="30" step="1" value="15" aria-label="统一示意高度">
+      <output id="heightOut">15 m</output>
+    </div>
+    <p class="note">OSM 抽出的建筑只有 <code>building=yes</code>，没有层数或高度标签。全部建筑先按统一体块拉伸；进入编辑模式后可逐栋改高度。</p>
+    <p class="note note-quiet">OSM 提供校界、建筑、田径场与道路；看台、平台、网球场、大门、喷泉按实景补全。编号索引含坐标与角度，便于定位调试。</p>
+  </section>
+
+  <section class="panel-block">
+    <div class="block-head"><span>图层 / LAYERS</span></div>
+    <div class="layers">
+      <label><input type="checkbox" data-layer="inside" checked><span>校界内建筑</span><i class="sw sw-inside"></i></label>
+      <label><input type="checkbox" data-layer="outside"><span>校界外建筑</span><i class="sw sw-outside"></i></label>
+      <label><input type="checkbox" data-layer="sports" checked><span>田径场 / 球场</span><i class="sw sw-sport"></i></label>
+      <label><input type="checkbox" data-layer="roads" checked><span>OSM 道路线位</span><i class="sw sw-road"></i></label>
+      <label><input type="checkbox" data-layer="landuse" checked><span>土地用途</span><i class="sw sw-land"></i></label>
+      <label><input type="checkbox" data-layer="context" checked><span>其他学校 / 围墙</span><i class="sw sw-context"></i></label>
+      <label><input type="checkbox" data-layer="landmarks" checked><span>实景补全</span><i class="sw sw-extra"></i></label>
+      <label><input type="checkbox" data-layer="guide" checked><span>大门轴线</span><i class="sw sw-guide"></i></label>
+      <label><input type="checkbox" data-layer="labels" checked><span>名称标注</span><i class="sw sw-label"></i></label>
+      <label><input type="checkbox" data-layer="codes" checked><span>编号</span><i class="sw sw-num"></i></label>
+      <label><input type="checkbox" data-layer="grid" checked><span>50 m 网格</span><i class="sw sw-grid"></i></label>
+    </div>
+  </section>
+
+  <section class="panel-block edit-block" id="editBlock" hidden>
+    <div class="block-head"><span>编辑 / EDIT</span><span id="editModeLabel">选择对象</span></div>
+    <p class="edit-tip" id="editEmpty">点击模型里的建筑、球场、大门或椭圆，即可单独改位置与高度。拖动空白处仍是转视角。</p>
+    <div id="editForm" hidden>
+      <div class="edit-object" id="editName">—</div>
+      <div class="edit-row"><label>X</label><button class="nudge" data-field="x" data-dir="-1">−</button><input id="edX" type="number" step="0.5"><button class="nudge" data-field="x" data-dir="1">+</button><span>m</span></div>
+      <div class="edit-row"><label>Z</label><button class="nudge" data-field="z" data-dir="-1">−</button><input id="edZ" type="number" step="0.5"><button class="nudge" data-field="z" data-dir="1">+</button><span>m</span></div>
+      <div class="edit-row"><label>Y</label><button class="nudge" data-field="y" data-dir="-1">−</button><input id="edY" type="number" step="0.5"><button class="nudge" data-field="y" data-dir="1">+</button><span>m</span></div>
+      <div class="edit-row"><label>旋转</label><button class="nudge" data-field="rot" data-dir="-1">−</button><input id="edR" type="number" step="1"><button class="nudge" data-field="rot" data-dir="1">+</button><span>°</span></div>
+      <div class="edit-row"><label id="edHLabel">高度</label><button class="nudge" data-field="h" data-dir="-1">−</button><input id="edH" type="number" step="0.5"><button class="nudge" data-field="h" data-dir="1">+</button><span id="edHUnit">m</span></div>
+      <div id="ellipseFields" hidden>
+        <div class="edit-row"><label>长轴</label><button class="nudge" data-field="a" data-dir="-1">−</button><input id="edA" type="number" step="1"><button class="nudge" data-field="a" data-dir="1">+</button><span>m</span></div>
+        <div class="edit-row"><label>短轴</label><button class="nudge" data-field="b" data-dir="-1">−</button><input id="edB" type="number" step="1"><button class="nudge" data-field="b" data-dir="1">+</button><span>m</span></div>
+      </div>
+      <div class="edit-tip" id="editHeightNote">该建筑单独高度（米）；不影响其他建筑。</div>
+      <div class="edit-actions">
+        <button id="undoEdit" title="Ctrl+Z">撤销</button>
+        <button id="redoEdit" title="Ctrl+Shift+Z">反撤销</button>
+        <button id="resetObj">复位选中</button>
+        <button id="resetAll">全部复位</button>
+      </div>
+    </div>
+    <div class="edit-actions">
+      <button id="exportEdit">导出修改</button>
+      <button id="importEdit">导入修改</button>
+      <button id="overlayBtn">实景叠图</button>
+      <button id="closeEdit">退出编辑</button>
+    </div>
+    <input id="importFile" type="file" accept=".json,application/json" hidden>
+    <div class="edit-status" id="editStatus"></div>
+  </section>
+
+  <section class="panel-block selected-block" id="selectedBlock">
+    <div class="block-head"><span>选中对象 / SELECTED</span><button id="clearSelection" class="text-btn" hidden>清除</button></div>
+    <div id="selectedEmpty" class="empty">点击任意建筑，查看它在 map.osm 中的原始属性。</div>
+    <div id="selectedInfo" hidden>
+      <div class="sel-title" id="selTitle">—</div>
+      <div class="sel-sub" id="selSub">—</div>
+      <div class="sel-metrics">
+        <div><span>面积</span><b id="selArea">—</b></div>
+        <div><span>轮廓</span><b id="selVerts">—</b></div>
+        <div><span>示意高度</span><b id="selHeight">—</b></div>
+      </div>
+      <div class="tag-list" id="selTags"></div>
+    </div>
+  </section>
+
+  <section class="panel-block index-block">
+    <div class="block-head"><span>编号 / INDEX</span><span id="indexCount">33</span></div>
+    <div class="index-note">θ=长轴方位；X/Z 为场地坐标（摆正轴），与编辑移动一致</div>
+    <div id="indexList" class="index-list"></div>
+  </section>
+
+  <div class="panel-foot">
+    <span>OSM data © OpenStreetMap contributors</span>
+    <span>ODbL</span>
+  </div>
+</aside>
+
+<button id="panelToggle" aria-label="打开数据面板">数据 / 图层</button>
+
+<div id="coordsHud" aria-live="off">
+  <div><span>CAM</span><b id="dbgCam">X +000.0  Y +000.0  Z +000.0</b></div>
+  <div><span>ANG</span><b id="dbgAng">HDG 000.0° / PITCH 00.0°</b></div>
+  <div><span>GROUND</span><b id="dbgGround">X —  Z —</b></div>
+  <div><span>SELECT</span><b id="dbgSel">—</b></div>
+  <button id="copyPose" class="copy-pose">复制坐标 / 角度</button>
+  <div class="coord-note">场地坐标 · 摆正轴 · X/Z 与编辑移动一致 · 原点 24.457256, 118.031006</div>
+</div>
+
+<div id="bottom">
+  <div class="help">左键拖动视角 · WASD 移动 · Space 上升 / Shift 下降</div>
+  <div class="views">
+    <button class="view-btn active" data-view="overview">总览</button>
+    <button class="view-btn" data-view="top">俯视</button>
+    <button class="view-btn" data-view="upright">摆正</button>
+    <button class="view-btn" data-view="reset">复位</button>
+    <button class="view-btn" data-view="auto" id="autoBtn">自动旋转</button>
+    <button class="view-btn" data-view="walk" id="walkBtn">第一人称</button>
+    <button id="editToggle" class="edit-fab">编辑</button>
+  </div>
+  <div class="credit">OSM 底图 · 可逐栋编辑</div>
+</div>
+
+<div id="labels" aria-hidden="true"></div>
+<div id="tooltip" role="status"></div>
+
+<div id="overlayModal" class="overlay-modal" hidden>
+  <div class="overlay-shell">
+    <button id="overlayClose" aria-label="关闭实景叠图">×</button>
+    <iframe id="overlayFrame" title="实景叠图 / 坐标校准"></iframe>
+  </div>
+</div>
+
+<div id="toast" role="status"></div>
+<div id="loader"><span></span><b>正在构建 OSM 模型</b></div>
+
+<script src="../lib/three.min.js"></script>
+<script src="osm_model_data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

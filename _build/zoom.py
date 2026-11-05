@@ -1,0 +1,10 @@
+﻿from pathlib import Path
+p=Path(r'xmfls-osm-model\src\app.js'); s=p.read_text(encoding='utf-8')
+s=s.replace("renderer.toneMappingExposure = .92;", "renderer.toneMappingExposure = .90;")
+s=s.replace("const hemi = new THREE.HemisphereLight(0xfbf5e9, 0x555a4b, .34);", "const hemi = new THREE.HemisphereLight(0xfbf5e9, 0x555a4b, .27);")
+s=s.replace("const sun = new THREE.DirectionalLight(0xfff2dc, 1.55);", "const sun = new THREE.DirectionalLight(0xfff2dc, 1.75);")
+s=s.replace("    ground: 0xbfb5a3,\n    schoolGround: 0xd9cbb7,\n    insideWall: 0xe9dfcf,\n    insideTop: 0x9d8e78,\n    outsideWall: 0xa9aaa3,\n    outsideTop: 0x85887f,", "    ground: 0xc1b5a2,\n    schoolGround: 0xd9c9b2,\n    insideWall: 0xe6d9c5,\n    insideTop: 0x8c7c64,\n    outsideWall: 0xa5a69e,\n    outsideTop: 0x81847b,")
+s=s.replace("    track: 0x964530,\n    pitch: 0x4d6b45,", "    track: 0x8f3d2b,\n    pitch: 0x496640,")
+s=s.replace("const home = { target: new THREE.Vector3(42, 3, -4), theta: .69, phi: 1.06, radius: 595 };", "const home = { target: new THREE.Vector3(44, 3, -4), theta: .69, phi: 1.04, radius: 490 };")
+p.write_text(s,encoding='utf-8')
+print('zoomed')

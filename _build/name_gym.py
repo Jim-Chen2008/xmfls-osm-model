@@ -1,0 +1,11 @@
+﻿from pathlib import Path
+p=Path(r'xmfls-osm-model\src\app.js'); s=p.read_text(encoding='utf-8')
+s=s.replace("  for (const b of DATA.buildings) {\n    addFeature({\n      kind: '建筑',\n      name: b.name || ('OSM 建筑 ' + b.id),\n      short: b.name || ('建筑 ' + b.id),", "  const knownBuildingNames = { '638485974': '体育馆' };\n  for (const b of DATA.buildings) {\n    const listedName = b.name || knownBuildingNames[b.id];\n    addFeature({\n      kind: '建筑',\n      name: listedName || ('OSM 建筑 ' + b.id),\n      short: listedName || ('建筑 ' + b.id),")
+p.write_text(s,encoding='utf-8')
+html=Path(r'xmfls-osm-model\src\index.html'); h=html.read_text(encoding='utf-8')
+h=h.replace('<div id="indexList" class="index-list"></div>', '<div class="index-note">θ=场地/建筑长轴方位（北 0°），坐标为模型米制</div>\n    <div id="indexList" class="index-list"></div>')
+html.write_text(h,encoding='utf-8')
+css=Path(r'xmfls-osm-model\src\style.css'); c=css.read_text(encoding='utf-8')
+c=c.replace(".index-list{max-height:178px", ".index-note{font-size:7.5px;color:var(--muted);line-height:1.5;margin:0 0 4px;padding:0 1px}\n.index-list{max-height:178px")
+css.write_text(c,encoding='utf-8')
+print('patched')

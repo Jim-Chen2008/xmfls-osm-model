@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>厦门外国语学校 · 实景叠图 / OSM 坐标校准</title>
+<style>
+  :root{
+    --bg:#f2ede3; --panel:#fbf7ee; --ink:#27332b; --soft:#5f6a5b;
+    --muted:#8a9384; --line:rgba(44,55,45,.13); --green:#3f5d4b;
+    --accent:#a75437; --mono:"Cascadia Mono","SFMono-Regular",Consolas,monospace;
+    --sans:"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden}
+  #app{display:grid;grid-template-columns:minmax(0,1fr) 350px;height:100%}
+  #stage{position:relative;min-width:0;background:#f7f2e8;overflow:hidden}
+  #map{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair;touch-action:none}
+  #title{position:absolute;left:26px;top:20px;pointer-events:none;z-index:3}
+  #title .eyebrow{font:600 8px/1.4 var(--mono);letter-spacing:.15em;color:var(--accent);text-transform:uppercase}
+  #title h1{margin:5px 0 3px;font-size:24px;font-weight:650;letter-spacing:.03em}
+  #title p{margin:0;font-size:9px;color:var(--soft);line-height:1.7}
+  #readout{position:absolute;left:26px;bottom:24px;z-index:3;background:rgba(39,51,42,.9);color:#eef2e9;
+    border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;min-width:238px;
+    font-family:var(--mono);box-shadow:0 14px 30px -22px rgba(20,30,20,.5);backdrop-filter:blur(10px)}
+  #readout .lbl{font-size:6.8px;letter-spacing:.15em;color:#9daf9b;margin-bottom:5px}
+  #readout .xy{display:flex;gap:15px;font-size:11px;line-height:1.4}
+  #readout b{color:#f1c59d;font-weight:500}
+  #readout .tip{font-size:6.8px;color:#9daf9b;margin-top:5px;letter-spacing:.02em}
+  #panel{overflow:auto;background:var(--panel);border-left:1px solid var(--line);padding:20px 18px 28px;position:relative;z-index:4}
+  #panel::-webkit-scrollbar{width:5px}#panel::-webkit-scrollbar-thumb{background:rgba(45,55,45,.18);border-radius:4px}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .panel-head span{font:600 8px/1 var(--mono);letter-spacing:.14em;color:var(--accent);text-transform:uppercase}
+  .panel-head i{font:500 8px/1 var(--mono);color:var(--muted);font-style:normal}
+  h2{font-size:13px;margin:0 0 5px;font-weight:650}
+  .lead{font-size:9px;line-height:1.8;color:var(--soft);margin:0 0 14px}
+  .rule{height:1px;background:var(--line);margin:14px 0}
+  .block{padding:12px 0;border-bottom:1px solid rgba(44,55,45,.08)}
+  .block:last-child{border-bottom:0}
+  .block-title{display:flex;justify-content:space-between;align-items:center;font:600 8px/1.3 var(--mono);letter-spacing:.8px;color:var(--soft);margin-bottom:9px;text-transform:uppercase}
+  .row{display:flex;align-items:center;gap:9px;margin:7px 0}
+  .row label{font-size:9px;color:var(--soft);flex:0 0 56px}
+  input[type=range]{flex:1;accent-color:var(--green);height:13px}
+  .val{font:500 8px/1 var(--mono);color:var(--ink);min-width:42px;text-align:right}
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px}
+  .check{display:flex;align-items:center;gap:6px;font-size:8.5px;color:var(--soft);cursor:pointer;user-select:none}
+  .check input{accent-color:var(--green);width:12px;height:12px}
+  .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  button{font-family:var(--sans);font-size:8.5px;border:1px solid var(--line);background:rgba(255,255,255,.55);color:var(--soft);border-radius:5px;padding:6px 8px;cursor:pointer}
+  button:hover{background:#fff;color:var(--ink)}
+  button.primary{background:var(--green);border-color:var(--green);color:#f8f4e9}
+  button.primary:hover{background:#4d6b58}
+  .gate-card{background:rgba(167,84,55,.065);border:1px solid rgba(167,84,55,.17);border-radius:7px;padding:9px 10px;font-size:8px;line-height:1.7;color:var(--soft)}
+  .gate-card b{color:var(--accent);font-family:var(--mono);font-size:8px}
+  .gate-card .coords{font-family:var(--mono);font-size:7.4px;color:var(--ink);margin-top:3px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 12px;font-size:7.3px;color:var(--muted);margin-top:8px}
+  .legend i{display:inline-block;width:12px;height:2px;vertical-align:middle;margin-right:4px}
+  #marks{max-height:125px;overflow:auto;margin-top:7px}
+  .mark{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(44,55,45,.07);font:8px/1.2 var(--mono);color:var(--soft)}
+  .mark b{color:var(--accent);font-weight:600;flex:0 0 20px}
+  .mark span{flex:1}
+  .mark button{padding:3px 5px;font-size:7px}
+  .empty{font-size:8px;color:var(--muted);padding:5px 0}
+  #hint{position:absolute;right:350px;bottom:24px;z-index:2;font:7px/1.6 var(--mono);color:#938b7d;text-align:right;pointer-events:none}
+  #toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:rgba(39,51,42,.92);color:#f4efe3;padding:8px 14px;border-radius:6px;font:8px/1.4 var(--mono);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+  #toast.show{opacity:1}
+  @media (max-width:900px){
+    #app{grid-template-columns:1fr;grid-template-rows:1fr auto}
+    #panel{position:absolute;right:0;bottom:0;left:0;max-height:46%;border-left:0;border-top:1px solid var(--line);border-radius:14px 14px 0 0;padding:14px 16px}
+    #hint{display:none}
+    #title{left:16px;top:14px}
+    #title h1{font-size:19px}
+    #readout{left:16px;bottom:16px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="map"></canvas>
+    <div id="title">
+      <div class="eyebrow">PHOTO ↔ OSM / CALIBRATION</div>
+      <h1>实景叠图 · OSM 坐标</h1>
+      <p>以操场为基准对齐实景图；鼠标位置即模型米制坐标，单击可落点。</p>
+    </div>
+    <div id="readout">
+      <div class="lbl">CURSOR / OSM</div>
+      <div class="xy"><span>X <b id="curX">—</b></span><span>Z <b id="curZ">—</b></span></div>
+      <div class="tip">X→东 · Z→南 · 单位 m · 原点为校界 bbox 中心</div>
+    </div>
+    <div id="hint">拖动实景图可微调位置<br>单击落点，复制坐标发给我</div>
+  </div>
+
+  <aside id="panel">
+    <div class="panel-head"><span>坐标辅助 / POSITIONING</span><i>OSM ↔ PHOTO</i></div>
+    <h2>先把跑道压准</h2>
+    <p class="lead">调整实景图层的旋转、缩放和位移，使照片里的红色跑道与后面的 OSM 跑道重合。对齐后，照片上的任意点都能读出 OSM 坐标。</p>
+
+    <div class="block">
+      <div class="block-title"><span>实景图层</span><span id="alignInfo">R 259.7° / S 0.38</span></div>
+      <div class="row"><label>旋转</label><input id="rot" type="range" min="-180" max="180" step="0.1" value="-100.3"><span class="val" id="rotv">79.7°</span></div>
+      <div class="row"><label>缩放</label><input id="scl" type="range" min="0.2" max="1.5" step="0.005" value="0.38"><span class="val" id="sclv">0.380</span></div>
+      <div class="row"><label>透明度</label><input id="opa" type="range" min="0.1" max="1" step="0.01" value="0.72"><span class="val" id="opav">0.72</span></div>
+      <div class="btns"><button id="reset" class="primary">重置到操场</button><button id="flip">旋转 180°</button></div>
+    </div>
+
+    <div class="block">
+      <div class="block-title"><span>图层</span><span>LAYERS</span></div>
+      <div class="checks">
+        <label class="check"><input id="imgOn" type="checkbox" checked>实景图</label>
+        <label class="check"><input id="osmOn" type="checkbox" checked>OSM 校界/跑道</label>
+        <label class="check"><input id="bldOn" type="checkbox" checked>OSM 建筑</label>
+        <label class="check"><input id="gridOn" type="checkbox" checked>坐标网格</label>
+        <label class="check"><input id="numOn" type="checkbox" checked>编号/关键点</label>
+        <label class="check"><input id="gateOn" type="checkbox" checked>大门参考线</label>
+        <label class="check"><input id="blankOn" type="checkbox">空白图层（仅坐标）</label>
+      </div>
+      <div class="legend">
+        <span><i style="background:#b45b3e"></i>大门 154,-95 ↔ 118,-125</span>
+        <span><i style="background:#3f5d4b"></i>OSM 跑道/校界</span>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-title"><span>大门参考</span><span>GATE</span></div>
+      <div class="gate-card">
+        用户标注的虚线：<b>154,-95 → 118,-125</b>。
+        <div class="coords">中点 (136.0, -110.0) · 墙长 46.86 m · 方位 129.8°</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-title"><span>单击坐标</span><span id="markCount">0 点</span></div>
+      <div class="btns"><button id="copyCursor">复制光标</button><button id="clearMarks">清空落点</button><button id="copyParams">复制对齐参数</button></div>
+      <div id="marks"><div class="empty">还没有落点。单击图上位置，P1/P2… 会列在这里。</div></div>
+    </div>
+
+    <div class="block">
+      <div class="block-title"><span>怎么用</span><span>HOW</span></div>
+      <p class="lead" style="margin:0">1. 先把跑道对齐；2. 把鼠标移到要定位的构筑物上；3. 单击落点，复制 <b>X/Z</b> 发我。若图片位置整体不对，直接拖动实景图。</p>
+    </div>
+  </aside>
+</div>
+<div id="toast"></div>
+
+<script src="osm_model_data.js"></script>
+<script>
+(function(){
+  'use strict';
+  const DATA = window.OSM_MODEL;
+  const $ = s => document.querySelector(s);
+  const stage = $('#stage'), canvas = $('#map'), ctx = canvas.getContext('2d');
+  let W = 1, H = 1;
+  let dpr = Math.min(devicePixelRatio || 1, 2);
+  const WORLD = { x0:-265, x1:265, z0:-210, z1:210 };
+  let scale = 1, ox = 0, oz = 0; // screen = center + world*scale
+
+  const IMG_ANCHOR = { x:610, y:300 };
+  const DEFAULTS = { angle:259.7, scale:0.38, ax:-133, az:-35, opacity:0.74 };
+  const img = { ...DEFAULTS, on:true, osm:true, bld:true, grid:true, nums:true, gate:true, blank:false };
+  let photo = new Image();
+  photo.src = 'calib_photo.jpg';
+  let photoReady = false;
+  photo.onload = () => { photoReady = true; draw(); };
+
+  const gateA = [154,-95], gateB = [118,-125];
+
+  const KEY = [
+    {no:'22', name:'田径场', x:-133.5, z:-35},
+    {no:'23', name:'足球场', x:-133.7, z:-56},
+    {no:'24', name:'篮球场', x:-46, z:-47.5},
+    {no:'25', name:'网球场A', x:-173, z:92},
+    {no:'26', name:'网球场B', x:-173, z:128},
+    {no:'27', name:'主席台', x:-133.5, z:61.5},
+    {no:'28', name:'平台', x:-77, z:-35},
+    {no:'29', name:'大门', x:(gateA[0]+gateB[0])/2, z:(gateA[1]+gateB[1])/2},
+    {no:'30', name:'喷泉', x:160, z:-128},
+    {no:'31', name:'校界', x:0, z:-153}
+  ];
+  let markers = [];
+
+  function resize(){
+    const r = stage.getBoundingClientRect();
+    W = Math.max(320, r.width); H = Math.max(320, r.height);
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    canvas.width = Math.round(W*dpr); canvas.height = Math.round(H*dpr);
+    canvas.style.width = W+'px'; canvas.style.height = H+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const sx = (W-54)/(WORLD.x1-WORLD.x0), sz = (H-54)/(WORLD.z1-WORLD.z0);
+    scale = Math.min(sx, sz, 2.6);
+    ox = W/2; oz = H/2;
+    draw();
+  }
+  function X(x){ return ox + x*scale; }
+  function Y(z){ return oz + z*scale; }
+  function worldFromScreen(px,py){ return { x:(px-ox)/scale, z:(py-oz)/scale }; }
+
+  function pathFrom(poly, close=true){
+    ctx.beginPath();
+    poly.forEach((p,i)=> { const sx=X(p[0]), sy=Y(p[1]); i?ctx.lineTo(sx,sy):ctx.moveTo(sx,sy); });
+    if(close) ctx.closePath();
+  }
+  function dashLine(a,b,color,width=1.5,dash=[5,4]){
+    ctx.save(); ctx.setLineDash(dash); ctx.strokeStyle=color; ctx.lineWidth=width;
+    ctx.beginPath(); ctx.moveTo(X(a[0]),Y(a[1])); ctx.lineTo(X(b[0]),Y(b[1])); ctx.stroke(); ctx.restore();
+  }
+
+  function drawGrid(){
+    ctx.save();
+    ctx.strokeStyle = 'rgba(51,64,51,.16)'; ctx.fillStyle = 'rgba(71,79,67,.58)';
+    ctx.lineWidth = .7; ctx.font = '7px "Cascadia Mono",Consolas,monospace';
+    for(let x=-250;x<=250;x+=50){
+      ctx.beginPath(); ctx.moveTo(X(x),Y(WORLD.z0)); ctx.lineTo(X(x),Y(WORLD.z1)); ctx.stroke();
+      ctx.fillText((x>0?'+':'')+x, X(x)+2, H-12);
+    }
+    for(let z=-200;z<=200;z+=50){
+      ctx.beginPath(); ctx.moveTo(X(WORLD.x0),Y(z)); ctx.lineTo(X(WORLD.x1),Y(z)); ctx.stroke();
+      ctx.fillText((z>0?'+':'')+z, 7, Y(z)-3);
+    }
+    // axes
+    ctx.strokeStyle='rgba(167,84,55,.45)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(X(0),Y(0)); ctx.lineTo(X(70),Y(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(0),Y(0)); ctx.lineTo(X(0),Y(70)); ctx.stroke();
+    ctx.fillStyle='rgba(167,84,55,.8)'; ctx.font='8px "Cascadia Mono",Consolas,monospace';
+    ctx.fillText('X+ 东', X(60), Y(0)-5);
+    ctx.fillText('Z+ 南', X(0)+6, Y(62));
+    ctx.fillStyle='rgba(62,72,60,.65)'; ctx.font='8px "Noto Sans SC","Microsoft YaHei",sans-serif';
+    ctx.fillText('OSM 坐标 / m', 12, 18);
+    ctx.restore();
+  }
+
+  function drawImage(){
+    if(!photoReady || !img.on) return;
+    ctx.save();
+    ctx.globalAlpha = img.opacity;
+    ctx.translate(X(img.ax), Y(img.az));
+    ctx.rotate(img.angle*Math.PI/180);
+    ctx.scale(img.scale, img.scale);
+    ctx.drawImage(photo, -IMG_ANCHOR.x, -IMG_ANCHOR.y);
+    ctx.restore();
+  }
+
+  function drawOsm(){
+    if(!img.osm) return;
+    // school boundary
+    pathFrom(DATA.school.polygon,true);
+    ctx.fillStyle='rgba(244,239,227,.22)'; ctx.fill();
+    ctx.save(); ctx.setLineDash([7,5]); ctx.strokeStyle='rgba(63,93,75,.8)'; ctx.lineWidth=1.8; ctx.stroke(); ctx.restore();
+    // track outer / field
+    if(DATA.track.outer){ pathFrom(DATA.track.outer.polygon); ctx.fillStyle='rgba(167,84,55,.15)'; ctx.fill(); ctx.strokeStyle='rgba(167,84,55,.55)'; ctx.lineWidth=1.2; ctx.stroke(); }
+    if(DATA.track.inner){ pathFrom(DATA.track.inner.polygon); ctx.fillStyle='rgba(87,115,84,.2)'; ctx.fill(); ctx.strokeStyle='rgba(63,93,75,.55)'; ctx.lineWidth=1; ctx.stroke(); }
+    // other pitches
+    for(const p of DATA.pitches||[]){
+      if(DATA.track.inner && p.id===DATA.track.inner.id) continue;
+      pathFrom(p.polygon); ctx.fillStyle='rgba(87,115,84,.12)'; ctx.fill(); ctx.strokeStyle='rgba(63,93,75,.35)'; ctx.lineWidth=.8; ctx.stroke();
+    }
+    if(!img.bld) return;
+    // buildings
+    for(const b of DATA.buildings){
+      pathFrom(b.polygon);
+      ctx.fillStyle = b.inside ? 'rgba(207,194,173,.62)' : 'rgba(200,200,190,.35)';
+      ctx.fill(); ctx.strokeStyle='rgba(91,76,58,.55)'; ctx.lineWidth=.8; ctx.stroke();
+    }
+  }
+
+  function drawGate(){
+    if(!img.gate) return;
+    dashLine(gateA, gateB, 'rgba(167,84,55,.95)', 3, [7,4]);
+    for(const [p,label] of [[gateA,'154,-95'],[gateB,'118,-125']]){
+      ctx.beginPath(); ctx.arc(X(p[0]),Y(p[1]),4.5,0,Math.PI*2);
+      ctx.fillStyle='#a75437'; ctx.fill(); ctx.strokeStyle='#fff7e9'; ctx.lineWidth=1.2; ctx.stroke();
+      ctx.fillStyle='#7a3f2c'; ctx.font='8px "Cascadia Mono",Consolas,monospace';
+      ctx.fillText(label, X(p[0])+7, Y(p[1])-7);
+    }
+    const mid=[(gateA[0]+gateB[0])/2,(gateA[1]+gateB[1])/2];
+    ctx.beginPath(); ctx.arc(X(mid[0]),Y(mid[1]),6,0,Math.PI*2);
+    ctx.fillStyle='#f5ead7'; ctx.fill(); ctx.strokeStyle='#a75437'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='#a75437'; ctx.font='7px "Cascadia Mono",Consolas,monospace';
+    ctx.fillText('GATE', X(mid[0])+9, Y(mid[1])+11);
+  }
+
+  function drawKey(){
+    if(!img.nums) return;
+    ctx.save();
+    ctx.font='7px "Cascadia Mono",Consolas,monospace';
+    for(const f of KEY){
+      const sx=X(f.x), sy=Y(f.z);
+      ctx.beginPath(); ctx.arc(sx,sy,9,0,Math.PI*2);
+      ctx.fillStyle='rgba(63,93,75,.9)'; ctx.fill();
+      ctx.strokeStyle='rgba(255,250,240,.85)'; ctx.lineWidth=1; ctx.stroke();
+      ctx.fillStyle='#f7f1e4'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(f.no, sx, sy+.5);
+      ctx.textBaseline='alphabetic'; ctx.textAlign='left';
+      ctx.fillStyle='rgba(49,62,50,.75)'; ctx.fillText(f.name, sx+11, sy+9);
+    }
+    // OSM building indices
+    ctx.font='6.5px "Cascadia Mono",Consolas,monospace'; ctx.fillStyle='rgba(100,86,67,.65)';
+    DATA.buildings.forEach((b,i)=>{
+      const sx=X(b.centroid[0]), sy=Y(b.centroid[1]);
+      ctx.fillText(String(i+1).padStart(2,'0'), sx-7, sy+2);
+    });
+    ctx.restore();
+  }
+
+  function drawMarkers(){
+    ctx.save();
+    markers.forEach((m,i)=>{
+      ctx.beginPath(); ctx.arc(X(m.x),Y(m.z),5,0,Math.PI*2);
+      ctx.fillStyle='#f4c49d'; ctx.fill(); ctx.strokeStyle='#a75437'; ctx.lineWidth=1.2; ctx.stroke();
+      ctx.fillStyle='#8f452e'; ctx.font='7px "Cascadia Mono",Consolas,monospace';
+      ctx.fillText('P'+(i+1), X(m.x)+7, Y(m.z)-6);
+      ctx.fillStyle='rgba(249,243,231,.9)';
+      const label = `P${i+1}  X ${m.x>=0?'+':''}${m.x.toFixed(1)}  Z ${m.z>=0?'+':''}${m.z.toFixed(1)}`;
+      const tw=ctx.measureText(label).width+8;
+      ctx.fillRect(X(m.x)+7, Y(m.z)+2, tw, 11);
+      ctx.fillStyle='#6b4b39'; ctx.fillText(label, X(m.x)+11, Y(m.z)+10);
+    });
+    ctx.restore();
+  }
+
+  let mouse = null, drag = null;
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#f4efe5'; ctx.fillRect(0,0,W,H);
+    if(img.blank){
+      if(img.grid) drawGrid();
+      drawMarkers();
+      return;
+    }
+    if(img.on) drawImage();
+    drawOsm();
+    if(img.grid) drawGrid();
+    drawGate();
+    drawKey();
+    drawMarkers();
+    if(mouse){
+      ctx.save(); ctx.strokeStyle='rgba(167,84,55,.3)'; ctx.lineWidth=.7; ctx.setLineDash([2,3]);
+      ctx.beginPath(); ctx.moveTo(X(mouse.x),Y(WORLD.z0)); ctx.lineTo(X(mouse.x),Y(WORLD.z1)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(X(WORLD.x0),Y(mouse.z)); ctx.lineTo(X(WORLD.x1),Y(mouse.z)); ctx.stroke(); ctx.restore();
+    }
+  }
+
+  function fmt(v){ return (v>=0?'+':'')+v.toFixed(2); }
+  function updateCursor(e){
+    const r=canvas.getBoundingClientRect();
+    mouse = worldFromScreen(e.clientX-r.left, e.clientY-r.top);
+    $('#curX').textContent = fmt(mouse.x);
+    $('#curZ').textContent = fmt(mouse.z);
+    draw();
+  }
+  function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1600); }
+  function copyText(text){ navigator.clipboard?.writeText(text).then(()=>toast('已复制: '+text)).catch(()=>toast(text)); }
+
+  canvas.addEventListener('pointermove', e=>{
+    updateCursor(e);
+    if(!drag) return;
+    const r=canvas.getBoundingClientRect();
+    const dx=e.clientX-drag.sx, dy=e.clientY-drag.sy;
+    if(Math.hypot(dx,dy)>3){
+      drag.moved=true;
+      img.ax = drag.ax + dx/scale;
+      img.az = drag.az + dy/scale;
+      $('#alignInfo').textContent = `R ${img.angle.toFixed(1)}° / S ${img.scale.toFixed(2)}`;
+      draw();
+    }
+  });
+  canvas.addEventListener('pointerdown', e=>{
+    if(e.button!==0) return;
+    const r=canvas.getBoundingClientRect();
+    drag={sx:e.clientX,sy:e.clientY,ax:img.ax,az:img.az,moved:false};
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointerup', e=>{
+    if(!drag) return;
+    const r=canvas.getBoundingClientRect();
+    const p=worldFromScreen(e.clientX-r.left,e.clientY-r.top);
+    if(!drag.moved){
+      markers.push({x:p.x,z:p.z});
+      addMarkRow(markers.length-1);
+      $('#markCount').textContent = markers.length+' 点';
+      draw();
+    }
+    drag=null;
+  });
+  canvas.addEventListener('pointerleave', ()=>{ mouse=null; draw(); });
+
+  function addMarkRow(i){
+    const box=$('#marks'); if(box.querySelector('.empty')) box.textContent='';
+    const m=markers[i];
+    const row=document.createElement('div'); row.className='mark';
+    const b=document.createElement('b'); b.textContent='P'+(i+1);
+    const sp=document.createElement('span'); sp.textContent=`X ${fmt(m.x)}  Z ${fmt(m.z)}`;
+    const cp=document.createElement('button'); cp.textContent='复制';
+    cp.onclick=()=>copyText(`${m.x.toFixed(2)}, ${m.z.toFixed(2)}`);
+    row.append(b,sp,cp); box.appendChild(row);
+    $('#markCount').textContent = markers.length+' 点';
+  }
+  $('#clearMarks').onclick=()=>{ markers=[]; $('#marks').innerHTML='<div class="empty">还没有落点。单击图上位置，P1/P2… 会列在这里。</div>'; $('#markCount').textContent='0 点'; draw(); };
+  $('#copyCursor').onclick=()=>{ if(mouse) copyText(`${mouse.x.toFixed(2)}, ${mouse.z.toFixed(2)}`); else toast('先把鼠标移到图上'); };
+  $('#copyParams').onclick=()=>copyText(`angle=${img.angle.toFixed(1)}, scale=${img.scale.toFixed(3)}, anchor=${img.ax.toFixed(2)},${img.az.toFixed(2)}`);
+
+  const slider=(id, key, out, fmtv)=>{
+    const el=$(id); el.oninput=()=>{ img[key]=parseFloat(el.value); $(out).textContent=fmtv(img[key]); $('#alignInfo').textContent=`R ${img.angle.toFixed(1)}° / S ${img.scale.toFixed(2)}`; draw(); };
+  };
+  slider('#rot','angle','#rotv',v=>v.toFixed(1)+'°');
+  slider('#scl','scale','#sclv',v=>v.toFixed(3));
+  slider('#opa','opacity','#opav',v=>v.toFixed(2));
+  $('#reset').onclick=()=>{ Object.assign(img,DEFAULTS); $('#rot').value=img.angle; $('#scl').value=img.scale; $('#opa').value=img.opacity; $('#rotv').textContent=img.angle.toFixed(1)+'°'; $('#sclv').textContent=img.scale.toFixed(3); $('#opav').textContent=img.opacity.toFixed(2); draw(); };
+  $('#flip').onclick=()=>{ img.angle=(img.angle+180)%360; if(img.angle>180)img.angle-=360; $('#rot').value=img.angle; $('#rotv').textContent=img.angle.toFixed(1)+'°'; draw(); };
+  const bind=(id,key)=>{ const el=$(id); el.onchange=()=>{ img[key]=el.checked; draw(); }; };
+  bind('#imgOn','on'); bind('#osmOn','osm'); bind('#bldOn','bld'); bind('#gridOn','grid'); bind('#numOn','nums'); bind('#gateOn','gate'); bind('#blankOn','blank');
+
+  window.addEventListener('resize',resize);
+  resize();
+})();
+</script>
+</body>
+</html>

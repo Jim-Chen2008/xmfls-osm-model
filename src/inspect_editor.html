@@ -1,0 +1,177 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>鍘﹂棬澶栧浗璇鏍℃捣娌ф牎鍖?路 OSM 浣撳潡妯″瀷</title>
+<meta name="description" content="瀹屽叏渚濇嵁 map.osm 鐨勬牎鐣屻€佸缓绛戣疆寤撱€佽繍鍔ㄥ満涓庨亾璺敓鎴愮殑涓夌淮浣撳潡妯″瀷銆?>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23436451'/%3E%3Cpath d='M8 24V8h4l8 10V8h4v16h-4L12 14v10z' fill='%23f6f0e4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage" aria-label="鍘﹂棬澶栧浗璇鏍℃捣娌ф牎鍖轰笁缁存ā鍨?></div>
+
+<div id="vignette" aria-hidden="true"></div>
+
+<header id="topbar">
+  <div class="topbar-left">
+    <div class="brandline">
+      <span class="osmbadge">OSM<span>+ 瀹炴櫙</span></span>
+      <span class="source-mini">map.osm 路 ODbL</span>
+    </div>
+    <h1>鍘﹂棬澶栧浗璇鏍?span>娴锋钵鏍″尯楂樹腑閮?/span></h1>
+    <p class="sub">OSM 鏍＄晫涓庡缓绛戜负搴?路 鎸夊疄鏅ˉ鍏ㄧ湅鍙般€佺綉鐞冨満銆佸ぇ闂ㄤ笌鍠锋硥</p>
+  </div>
+  <div class="topbar-stats">
+    <div><b id="statBuildings">21</b><span>寤虹瓚杞粨</span></div>
+    <div><b id="statArea">81,353</b><span>m虏 鏍＄晫</span></div>
+    <div><b>32</b><span>缂栧彿瀵硅薄</span></div>
+  </div>
+</header>
+
+<div id="compass" aria-hidden="true">
+  <div class="compass-ring">
+    <span class="cn">N</span>
+    <i id="compassNeedle"></i>
+    <em></em>
+  </div>
+  <span class="compass-label">鍖?/span>
+</div>
+
+<aside id="panel">
+  <button id="panelClose" class="panel-close" aria-label="鏀惰捣鏁版嵁闈㈡澘">脳</button>
+  <section class="panel-block data-block">
+    <div class="block-head"><span>鏁版嵁 / SOURCE</span><span class="live"><i></i>OSM</span></div>
+    <dl class="data-grid">
+      <div><dt>鏍＄晫鍐呭缓绛?/dt><dd id="dInside">18</dd></div>
+      <div><dt>鏍＄晫澶栧缓绛?/dt><dd id="dOutside">3</dd></div>
+      <div><dt>鏍＄晫闈㈢Н</dt><dd id="dArea">8.14 ha</dd></div>
+      <div><dt>OSM way / 鑺傜偣</dt><dd id="dWays">46 / 438</dd></div>
+    </dl>
+    <div class="source-line">
+      <span>婧愭枃浠?/span><b>map.osm</b>
+      <span id="dSourceSize">101.9 KB</span>
+    </div>
+    <div class="source-line"><span>鎶曞奖鍘熺偣</span><b id="dOrigin">24.457256, 118.031006</b></div>
+  </section>
+
+  <section class="panel-block">
+    <div class="block-head"><span>楂樺害 / HEIGHT</span><span class="hint">OSM 鏈彁渚?/span></div>
+    <div class="height-line">
+      <input id="heightSlider" type="range" min="3" max="30" step="1" value="15" aria-label="缁熶竴绀烘剰楂樺害">
+      <output id="heightOut">15 m</output>
+    </div>
+    <p class="note">姝や唤 OSM 鎶藉嚭鐨勫缓绛戝彧鏈?<code>building=yes</code>锛屾病鏈夊眰鏁版垨楂樺害鏍囩銆傚叏閮ㄥ缓绛戝厛鎸夌粺涓€浣撳潡鎷変几锛涙嫋鍔ㄥ彲璋冩暣绀烘剰楂樺害銆?/p>
+    <p class="note note-quiet">OSM 鎻愪緵鏍＄晫銆佸缓绛戙€佺敯寰勫満涓庨亾璺紱鐪嬪彴銆佸钩鍙般€佺綉鐞冨満銆佸ぇ闂ㄣ€佸柗娉夋寜瀹炴櫙琛ュ叏銆傜紪鍙风储寮曞惈鍧愭爣涓庤搴︼紝渚夸簬瀹氫綅璋冭瘯銆?/p>
+  </section>
+
+  <section class="panel-block">
+    <div class="block-head"><span>鍥惧眰 / LAYERS</span></div>
+    <div class="layers">
+      <label><input type="checkbox" data-layer="inside" checked><span>鏍＄晫鍐呭缓绛?/span><i class="sw sw-inside"></i></label>
+      <label><input type="checkbox" data-layer="outside"><span>鏍＄晫澶栧缓绛?/span><i class="sw sw-outside"></i></label>
+      <label><input type="checkbox" data-layer="sports" checked><span>鐢板緞鍦?/ 鐞冨満</span><i class="sw sw-sport"></i></label>
+      <label><input type="checkbox" data-layer="roads" checked><span>OSM 閬撹矾绾夸綅</span><i class="sw sw-road"></i></label>
+      <label><input type="checkbox" data-layer="landuse" checked><span>鍦熷湴鐢ㄩ€?/span><i class="sw sw-land"></i></label>
+      <label><input type="checkbox" data-layer="context" checked><span>鍏朵粬瀛︽牎 / 鍥村</span><i class="sw sw-context"></i></label>
+      <label><input type="checkbox" data-layer="landmarks" checked><span>瀹炴櫙琛ュ叏</span><i class="sw sw-extra"></i></label>
+      <label><input type="checkbox" data-layer="guide" checked><span>澶ч棬杞寸嚎</span><i class="sw sw-guide"></i></label>
+      <label><input type="checkbox" data-layer="labels" checked><span>鍚嶇О鏍囨敞</span><i class="sw sw-label"></i></label>
+      <label><input type="checkbox" data-layer="codes" checked><span>缂栧彿</span><i class="sw sw-num"></i></label>
+      <label><input type="checkbox" data-layer="grid" checked><span>50 m 缃戞牸</span><i class="sw sw-grid"></i></label>
+    </div>
+  </section>
+
+  <section class="panel-block edit-block" id="editBlock" hidden>
+    <div class="block-head"><span>缂栬緫 / EDIT</span><span id="editModeLabel">閫夋嫨瀵硅薄</span></div>
+    <p class="edit-tip" id="editEmpty">鐐瑰嚮妯″瀷閲岀殑寤虹瓚銆佺悆鍦恒€佸ぇ闂ㄦ垨妞渾锛屽嵆鍙崟鐙敼浣嶇疆涓庨珮搴︺€傛嫋鍔ㄧ┖鐧藉浠嶆槸杞瑙掋€?/p>
+    <div id="editForm" hidden>
+      <div class="edit-object" id="editName">鈥?/div>
+      <div class="edit-row"><label>X</label><button class="nudge" data-field="x" data-dir="-1">鈭?/button><input id="edX" type="number" step="0.5"><button class="nudge" data-field="x" data-dir="1">+</button><span>m</span></div>
+      <div class="edit-row"><label>Z</label><button class="nudge" data-field="z" data-dir="-1">鈭?/button><input id="edZ" type="number" step="0.5"><button class="nudge" data-field="z" data-dir="1">+</button><span>m</span></div>
+      <div class="edit-row"><label>Y</label><button class="nudge" data-field="y" data-dir="-1">鈭?/button><input id="edY" type="number" step="0.5"><button class="nudge" data-field="y" data-dir="1">+</button><span>m</span></div>
+      <div class="edit-row"><label>鏃嬭浆</label><button class="nudge" data-field="rot" data-dir="-1">鈭?/button><input id="edR" type="number" step="1"><button class="nudge" data-field="rot" data-dir="1">+</button><span>掳</span></div>
+      <div class="edit-row"><label id="edHLabel">楂樺害</label><button class="nudge" data-field="h" data-dir="-1">鈭?/button><input id="edH" type="number" step="0.5"><button class="nudge" data-field="h" data-dir="1">+</button><span id="edHUnit">m</span></div>
+      <div class="edit-tip" id="editHeightNote">寤虹瓚楂樺害鎸夌背锛涜ˉ鍏ㄦ瀯绛戠墿涓洪珮搴︾郴鏁般€?/div>
+      <div class="edit-actions">
+        <button id="undoEdit" title="Ctrl+Z">鎾ら攢</button>
+        <button id="redoEdit" title="Ctrl+Shift+Z">鍙嶆挙閿€</button>
+        <button id="resetObj">澶嶄綅閫変腑</button>
+        <button id="resetAll">鍏ㄩ儴澶嶄綅</button>
+      </div>
+    </div>
+    <div class="edit-actions">
+      <button id="exportEdit">瀵煎嚭淇敼</button>
+      <button id="importEdit">瀵煎叆淇敼</button>
+      <button id="overlayBtn">瀹炴櫙鍙犲浘</button>
+      <button id="closeEdit">閫€鍑虹紪杈?/button>
+    </div>
+    <input id="importFile" type="file" accept=".json,application/json" hidden>
+    <div class="edit-status" id="editStatus"></div>
+  </section>
+
+  <section class="panel-block selected-block" id="selectedBlock">
+    <div class="block-head"><span>閫変腑瀵硅薄 / SELECTED</span><button id="clearSelection" class="text-btn" hidden>娓呴櫎</button></div>
+    <div id="selectedEmpty" class="empty">鐐瑰嚮浠绘剰寤虹瓚锛屾煡鐪嬪畠鍦?map.osm 涓殑鍘熷灞炴€с€?/div>
+    <div id="selectedInfo" hidden>
+      <div class="sel-title" id="selTitle">鈥?/div>
+      <div class="sel-sub" id="selSub">鈥?/div>
+      <div class="sel-metrics">
+        <div><span>闈㈢Н</span><b id="selArea">鈥?/b></div>
+        <div><span>杞粨</span><b id="selVerts">鈥?/b></div>
+        <div><span>绀烘剰楂樺害</span><b id="selHeight">鈥?/b></div>
+      </div>
+      <div class="tag-list" id="selTags"></div>
+    </div>
+  </section>
+
+  <section class="panel-block index-block">
+    <div class="block-head"><span>缂栧彿 / INDEX</span><span id="indexCount">32</span></div>
+    <div class="index-note">胃=鍦哄湴/寤虹瓚闀胯酱鏂逛綅锛堝寳 0掳锛夛紝鍧愭爣涓烘ā鍨嬬背鍒?/div>
+    <div id="indexList" class="index-list"></div>
+  </section>
+
+  <div class="panel-foot">
+    <span>OSM data 漏 OpenStreetMap contributors</span>
+    <span>ODbL</span>
+  </div>
+</aside>
+
+<button id="panelToggle" aria-label="鎵撳紑鏁版嵁闈㈡澘">鏁版嵁 / 鍥惧眰</button>
+
+<div id="coordsHud" aria-live="off">
+  <div><span>CAM</span><b id="dbgCam">X +000.0  Y +000.0  Z +000.0</b></div>
+  <div><span>ANG</span><b id="dbgAng">HDG 000.0掳 / PITCH 00.0掳</b></div>
+  <div><span>GROUND</span><b id="dbgGround">X 鈥? Z 鈥?/b></div>
+  <div><span>SELECT</span><b id="dbgSel">鈥?/b></div>
+  <div class="coord-note">X鈫掍笢 路 Z鈫掑崡 路 瑙掑害鑷寳椤烘椂閽?路 鍘熺偣 24.457256, 118.031006</div>
+</div>
+
+<div id="bottom">
+  <div class="help">宸﹂敭鎷栧姩瑙嗚 路 WASD 绉诲姩 路 Space 涓婂崌 / Shift 涓嬮檷</div>
+  <div class="views">
+    <button class="view-btn active" data-view="overview">鎬昏</button>
+    <button class="view-btn" data-view="top">淇</button>
+    <button class="view-btn" data-view="reset">澶嶄綅</button>
+    <button class="view-btn" data-view="auto" id="autoBtn">鑷姩鏃嬭浆</button>
+    <button id="editToggle" class="edit-fab">缂栬緫</button>
+  </div>
+  <div class="credit">浠?OSM 鍑犱綍 路 鏃犵収鐗囧弬鑰?/div>
+</div>
+
+<div id="labels" aria-hidden="true"></div>
+<div id="tooltip" role="status"></div>
+<div id="overlayModal" class="overlay-modal" hidden>
+  <div class="overlay-shell">
+    <button id="overlayClose" aria-label="鍏抽棴瀹炴櫙鍙犲浘">脳</button>
+    <iframe id="overlayFrame" title="瀹炴櫙鍙犲浘 / 鍧愭爣鏍″噯"></iframe>
+  </div>
+</div>
+<div id="loader"><span></span><b>姝ｅ湪鏋勫缓 OSM 妯″瀷</b></div>
+
+<script src="../lib/three.min.js"></script>
+<script src="osm_model_data.js"></script>
+<script src="app.js"></script>
+<script>setTimeout(function(){document.querySelector("#editToggle").click();},800);</script></body>
+</html>
+
