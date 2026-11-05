@@ -25,6 +25,11 @@
 
 ## 怎么跑
 
+### 0) 在线预览（GitHub Pages，无需下载）
+
+开启 Pages 后直接访问：`https://jim-chen2008.github.io/xmfls-osm-model/`
+（站点文件在 `docs/`，加载的模型固定为 `docs/models/gate_campus_current-edited-20261027-2338-fixed.glb`——即校门修正版）。
+
 ### 1) 查看器（最简单）
 
 直接双击 `viewer/index.html`（Chrome / Edge 106+）。模型内联为 base64，**不需要本地服务器**。
